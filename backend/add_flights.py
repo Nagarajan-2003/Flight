@@ -1,43 +1,36 @@
-import requests
-import json
+from database import SessionLocal
+from models import Flight
 
-BASE_URL = "http://localhost:8000"
+db = SessionLocal()
 
-flights = [
-    {
-        "flight_number": "AA123",
-        "airline": "American Airlines", 
-        "departure": "New York",
-        "destination": "Los Angeles",
-        "departure_time": "2024-12-01T10:00:00",
-        "total_seats": 150
-    },
-    {
-        "flight_number": "UA456", 
-        "airline": "United Airlines",
-        "departure": "Chicago",
-        "destination": "Miami",
-        "departure_time": "2024-12-02T14:30:00",
-        "total_seats": 200
-    },
-    {
-        "flight_number": "DL789",
-        "airline": "Delta Airlines",
-        "departure": "Atlanta", 
-        "destination": "Seattle",
-        "departure_time": "2024-12-03T09:15:00",
-        "total_seats": 180
-    }
-]
-
-for flight in flights:
-    try:
-        response = requests.post(f"{BASE_URL}/flights/", json=flight)
-        if response.status_code == 201:
-            print(f"✅ Added flight {flight['flight_number']}")
-        else:
-            print(f"❌ Failed to add {flight['flight_number']}: {response.text}")
-    except Exception as e:
-        print(f"❌ Error adding {flight['flight_number']}: {e}")
-
-print("\n🎉 All flights added! Refresh your frontend at http://localhost:3000")
+if db.query(Flight).count() == 0:
+    sample_flights = [
+        Flight(
+            flight_number="AA101",
+            origin="New York",
+            destination="London",
+            departure_time="10:00 AM",
+            price=450.0,
+            available_seats=20,
+        ),
+        Flight(
+            flight_number="BA202",
+            origin="London",
+            destination="Tokyo",
+            departure_time="02:30 PM",
+            price=680.0,
+            available_seats=15,
+        ),
+        Flight(
+            flight_number="DL303",
+            origin="San Francisco",
+            destination="Paris",
+            departure_time="08:15 PM",
+            price=520.0,
+            available_seats=10,
+        ),
+    ]
+    db.add_all(sample_flights)
+    db.commit()
+    print("Database seeded with sample flights.")
+db.close()
