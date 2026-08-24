@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Flight Booking App")
+app = FastAPI(title="AeroBook API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +42,11 @@ def get_flights(db: Session = Depends(get_db)):
     return db.query(Flight).all()
 
 
+@app.get("/api/bookings")
+def get_bookings(db: Session = Depends(get_db)):
+    return db.query(Booking).all()
+
+
 @app.post("/api/flights")
 def create_flight(flight: FlightCreate, db: Session = Depends(get_db)):
     db_flight = Flight(**flight.dict())
@@ -67,7 +72,23 @@ def book_flight(booking: BookingCreate, db: Session = Depends(get_db)):
     return {"message": "Booking confirmed", "booking": db_booking}
 
 
-# Serve React Frontend Build Files
+@app.delete("/api/bookings/{booking_id}")
+def cancel_booking(booking_id: int, db: Session = Depends(get_db)):
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    flight = db.query(Flight).filter(Flight.id == booking.flight_id).first()
+    if flight:
+        flight.available_seats += booking.seats_booked
+
+    db.delete(booking)
+    db.commit()
+    return {
+        "message": f"Booking #{booking_id} cancelled successfully and seats restored."
+    }
+
+
 frontend_build_path = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "build"
 )
